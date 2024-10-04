@@ -61,15 +61,15 @@ class DB():
             else:
                 print(f"Ошибка при добавлении файла: {e}")
 
-    def get_added_file(self):
+    def get_added_files(self):
         # Получаем первый файл со статусом "added"
-        file = self.session.query(VideoPath).filter_by(status="added").first()
+        files = self.session.query(VideoPath).filter_by(status="added").all()
 
-        if file:
-            return file  # Возвращаем весь объект VideoPath
+        if files:
+            return files  # Возвращаем весь объект VideoPath
         else:
             print("Нет файлов со статусом 'added'.")
-            return None  # Возвращаем None, если файлов нет
+            return []  # Возвращаем None, если файлов нет
 
     def set_file_status(self, id: str, status: str):
         # Находим файл по пути

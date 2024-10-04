@@ -19,6 +19,7 @@ class VideoEncoder:
             return
 
         output_path = f"{video_path.rsplit('.', 1)[0]}_converted.mp4"
+        print(f"Видео '{video_path}' конвертируется в '{output_path}'.")
 
         try:
             (
@@ -44,5 +45,6 @@ if __name__ == "__main__":
     db = DB()
     video_encoder = VideoEncoder(db)  # Создаем экземпляр VideoEncoder
     
-    video_file = db.get_added_file()
-    video_encoder.encode_video(video_file.path, "720p")
+    video_files = db.get_added_files()
+    for video_file in video_files:
+        video_encoder.encode_video(video_file.path, "720p")
