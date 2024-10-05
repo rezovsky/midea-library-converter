@@ -45,10 +45,7 @@ class VideoEncoder:
                 int(output[0].split('/')[0])/int(output[0].split('/')[1]))
             self.duration_seconds = float(output[1])  # Длительность в секундах
             self.total_frames = round(self.duration_seconds * self.frame_rate)
-
-            print(f"Длительность видео: {self.duration_seconds} секунд")
-            print(f"Частота кадров: {self.frame_rate} fps")
-            print(f"Общее количество кадров: {self.total_frames}")
+            return {'duration': round(self.duration_seconds), 'frames': round(self.total_frames)}
 
         except subprocess.CalledProcessError as e:
             print(f"Ошибка при получении информации о видео: {e}")
@@ -60,7 +57,7 @@ class VideoEncoder:
 
         # Проверка на ошибки в передаче желаемого качества кодирования
         if quality not in self.quality_settings:
-            print("Неподдерживаемое качество. Доступные варианты: 720p, 480p, 360p.")
+            print("Неподдерживаемое качество. Доступные варианты: 1080p, 720p, 480p, 360p.")
             return
 
         # Генерируем путь к перекодированному файлу
@@ -88,7 +85,7 @@ class VideoEncoder:
                 '-strict', 'experimental',
                 output_path
             ]
-
+            self.db.set_file_status(video_file.id, "encode")
             # Запуск ffmpeg через subprocess и вывод в реальном времени
             process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
@@ -111,8 +108,8 @@ class VideoEncoder:
                     current_frame = int(frame_match.group(1))
                     percentage = (current_frame / self.total_frames) * \
                         100 if self.total_frames > 0 else 0
-                    print(f"Текущий кадр: {current_frame}, Прогресс: {
-                          percentage:.2f}%")
+                    db.edit_encoded_frame(video_file.id, current_frame)
+                    
 
             process.wait()  # Ожидание завершения процесса
 
@@ -136,10 +133,14 @@ class VideoEncoder:
             print(f"Ошибка при кодировании видео: {e}")
 
 
+    def encoded_start(self):
+        video_files = db.get_added_files()
+        for video_file in video_files:
+            resolution = db.get_setting("resolution")
+            video_encoder.encode_video(video_file, resolution)
+
 if __name__ == "__main__":
     db = DB()
     video_encoder = VideoEncoder(db)  # Создаем экземпляр VideoEncoder
 
-    video_files = db.get_added_files()
-    for video_file in video_files:
-        video_encoder.encode_video(video_file, "720p")
+    video_encoder.encoded_start()
