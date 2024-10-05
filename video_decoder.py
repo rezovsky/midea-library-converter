@@ -1,6 +1,5 @@
 import re
 import subprocess
-import ffmpeg
 import os
 
 from db import DB, VideoPath
@@ -10,6 +9,7 @@ class VideoEncoder:
     def __init__(self, db):
         self.db = db
         self.quality_settings = {
+            "1080p": "1920x1080",
             "720p": "1280x720",
             "480p": "854x480",
             "360p": "640x360"
@@ -33,17 +33,23 @@ class VideoEncoder:
             '-of', 'default=noprint_wrappers=1:nokey=1',
             video_path
         ]
-        
         try:
-            output = subprocess.check_output(cmd, universal_newlines=True).strip().splitlines()
+            output = subprocess.check_output(
+                cmd, universal_newlines=True).strip().splitlines()
+            # Перебор вывода и замена N/A на 0
+            for i in range(len(output)):
+                if output[i] == 'N/A':
+                    output[i] = 0  # Заменяем N/A на 0
+
+            self.frame_rate = float(
+                int(output[0].split('/')[0])/int(output[0].split('/')[1]))
             self.duration_seconds = float(output[1])  # Длительность в секундах
-            self.frame_rate = float(int(output[0].split('/')[0])/int(output[0].split('/')[1]))
-            self.total_frames =  round(self.duration_seconds * self.frame_rate)
-            
+            self.total_frames = round(self.duration_seconds * self.frame_rate)
+
             print(f"Длительность видео: {self.duration_seconds} секунд")
             print(f"Частота кадров: {self.frame_rate} fps")
             print(f"Общее количество кадров: {self.total_frames}")
-            
+
         except subprocess.CalledProcessError as e:
             print(f"Ошибка при получении информации о видео: {e}")
         except ValueError as e:
@@ -75,6 +81,8 @@ class VideoEncoder:
                 self.ffmpeg_path,
                 '-i', video_path,
                 '-vf', f"scale={self.quality_settings[quality]}",
+                '-map', '0:v',  # Копируем видеодорожку
+                '-map', '0:a',  # Копируем все аудиодорожки
                 '-vcodec', 'libx264',
                 '-acodec', 'aac',
                 '-strict', 'experimental',
@@ -114,7 +122,8 @@ class VideoEncoder:
                 # Помечаем путь в БД как сконвертированный
                 self.db.set_file_status(video_file.id, "encoded")
                 # Удаляем исходный файл
-                os.remove(video_path)
+                # временно отключу
+                # os.remove(video_path)
                 # Генерируем новое имя для сконвертированного файла
                 new_name = os.path.splitext(video_path)[0] + ".mp4"
                 # Переименовываем новый файл

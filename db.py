@@ -14,6 +14,7 @@ class VideoPath(Base):
 
     id = Column(String, primary_key=True, unique=True)
     path = Column(String, unique=True)  # Исправлено имя поля
+
     status = Column(String)
 
 
