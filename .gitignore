@@ -163,3 +163,30 @@ cython_debug/
 
 db.db
 ffmpeg/
+
+
+#midea_web_ui/
+
+midea_web_ui/.DS_Store
+midea_web_ui/node_modules
+midea_web_ui//dist
+
+
+# local env files
+midea_web_ui/.env.local
+midea_web_ui/.env.*.local
+
+# Log files
+midea_web_ui/npm-debug.log*
+midea_web_ui/yarn-debug.log*
+midea_web_ui/yarn-error.log*
+midea_web_ui/pnpm-debug.log*
+
+# Editor directories and files
+midea_web_ui/.idea
+midea_web_ui/.vscode
+midea_web_ui/*.suo
+midea_web_ui/*.ntvs*
+midea_web_ui/*.njsproj
+midea_web_ui/*.sln
+midea_web_ui/*.sw?
