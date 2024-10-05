@@ -63,6 +63,7 @@ class DB():
         default_settings = [
             {'name': 'resolution', 'value': '720p'},
             {'name': 'scan_period', 'value': '300'},
+            {'name': 'encoded_period', 'value': '600'},
         ]
 
         # Добавляем настройки только если их ещё нет в базе
@@ -120,7 +121,7 @@ class DB():
     def get_encoded_frame(self, id: str):
         media = self.session.query(VideoPath).filter_by(id=id).first()
         if media:
-            return media.frame
+            return {'frame': media.frame, 'frames': media.frames}
         else:
             return None
 
@@ -133,6 +134,14 @@ class DB():
         else:
             print("Нет файлов со статусом 'added'.")
             return []  # Возвращаем None, если файлов нет
+        
+    def get_files(self):
+        files = self.session.query(VideoPath).all()
+        if files:
+            return files
+        else:
+            print("Нет файлов.")
+            return []
 
     def get_encoded_files(self):
         # Получаем первый файл со статусом "added"

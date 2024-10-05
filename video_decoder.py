@@ -1,6 +1,7 @@
 import re
 import subprocess
 import os
+import time
 
 from db import DB, VideoPath
 
@@ -49,8 +50,10 @@ class VideoEncoder:
 
         except subprocess.CalledProcessError as e:
             print(f"Ошибка при получении информации о видео: {e}")
+            return None
         except ValueError as e:
             print(f"Ошибка при преобразовании данных: {e}")
+            return None
 
     def encode_video(self, video_file: 'VideoPath', quality: str):
         video_path = video_file.path
@@ -106,9 +109,7 @@ class VideoEncoder:
                 frame_match = re.search(r'frame=\s*(\d+)', line)
                 if frame_match:
                     current_frame = int(frame_match.group(1))
-                    percentage = (current_frame / self.total_frames) * \
-                        100 if self.total_frames > 0 else 0
-                    db.edit_encoded_frame(video_file.id, current_frame)
+                    self.db.edit_encoded_frame(video_file.id, current_frame)
                     
 
             process.wait()  # Ожидание завершения процесса
@@ -119,8 +120,7 @@ class VideoEncoder:
                 # Помечаем путь в БД как сконвертированный
                 self.db.set_file_status(video_file.id, "encoded")
                 # Удаляем исходный файл
-                # временно отключу
-                # os.remove(video_path)
+                os.remove(video_path)
                 # Генерируем новое имя для сконвертированного файла
                 new_name = os.path.splitext(video_path)[0] + ".mp4"
                 # Переименовываем новый файл
@@ -134,10 +134,18 @@ class VideoEncoder:
 
 
     def encoded_start(self):
-        video_files = db.get_added_files()
-        for video_file in video_files:
-            resolution = db.get_setting("resolution")
-            video_encoder.encode_video(video_file, resolution)
+        print('Запущено периодическое кодирование...')
+        encode_files = self.db.get_encode_files()
+        if encode_files:
+            for encode_file in encode_files:
+                self.db.set_file_status(encode_file.id, "added")
+        while True:
+            video_files = self.db.get_added_files()
+            for video_file in video_files:
+                resolution = str(self.db.get_setting("resolution"))
+                self.encode_video(video_file, resolution)
+            encoded_period = int(self.db.get_setting('encoded_period'))
+            time.sleep(encoded_period)
 
 if __name__ == "__main__":
     db = DB()

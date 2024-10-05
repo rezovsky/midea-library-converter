@@ -1,5 +1,6 @@
 from threading import Thread
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from db import DB
 from media_scan import MediaScan
@@ -7,18 +8,47 @@ from video_decoder import VideoEncoder
 
 
 app = FastAPI()
+
+# Настройка CORS
+origins = [
+    "http://localhost:8080"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Разрешенные источники
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешенные методы (GET, POST и т.д.)
+    allow_headers=["*"],  # Разрешенные заголовки
+)
+
 db = DB()
 scanner = MediaScan(db)
 encoder = VideoEncoder(db)
 
 # автоматический запуск сканирования медиа папок
 def start_periodical_scan():
-    period_db = DB()
-    period_scanner = MediaScan(period_db)
+    period_scanner_db = DB()
+    period_scanner = MediaScan(period_scanner_db)
     period_scanner.start_periodical_scan()
 
 scanner_thread = Thread(target=start_periodical_scan)
 scanner_thread.start()
+
+# автоматический запуск кодирования файлов
+def start_periodical_encoded():
+    period_encoded_db = DB()
+    period_encoded = VideoEncoder(period_encoded_db)
+    period_encoded.encoded_start()
+
+encoded_thread = Thread(target=start_periodical_encoded)
+encoded_thread.start()
+
+# получаем все файлы из базы данных
+
+@app.get("/db/files")
+def get_files():
+    return db.get_files()
 
 # запуск сканирования медиа папок
 @app.get("/scan/path")

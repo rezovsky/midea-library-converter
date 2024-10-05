@@ -9,8 +9,7 @@ class MediaScan():
         self.db = db
         self.video_encoder = VideoEncoder(db)
         self.paths = self.db.get_media_paths()  # Получаем пути из базы данных
-        self.video_extensions = ['.mp4', '.avi',
-                                 '.mkv', '.mov', '.flv', '.wmv']
+        self.video_extensions = ['.avi', '.mkv', '.mov', '.flv', '.wmv']
 
     def scan_paths(self):
         for path in self.paths:
@@ -31,15 +30,22 @@ class MediaScan():
                 if ext.lower() in self.video_extensions:
                     file_path = os.path.join(root, filename)
                     file_info = self.video_encoder.get_video_info(file_path)
-                    db_result = self.db.add_file(file_path, file_info['duration'], file_info['frames'])  # Добавляем файл в базу данных
+                    # если данные о файле не получены по какой-то причине, то заменяем нулями
+                    if file_info is None:
+                        duration = 0
+                        frames = 0
+                    else:
+                        duration = file_info['duration']
+                        frames = file_info['frames']
+                    db_result = self.db.add_file(file_path, duration, frames)  # Добавляем файл в базу данных
                     if db_result['status'] == 'success':
                         print(f"Добавлен видеофайл: {file_path}")
-                        result[db_result['id']] = {'status': 'added', 'duration': file_info['duration'], 'frames': file_info['frames']}
+                        result[db_result['id']] = {'status': 'added', 'duration': duration, 'frames': frames}
         return result
     
     def start_periodical_scan(self):
+        print("Периодическое сканирование запущено...")
         while True:
-            print("Периодическое сканирование запущено...")
             self.scan_paths()
             scan_period = int(self.db.get_setting('scan_period'))
             time.sleep(scan_period)
@@ -49,4 +55,4 @@ class MediaScan():
 if __name__ == "__main__":
     db = DB()  # Создаем экземпляр DB
     media_scanner = MediaScan(db)  # Создаем экземпляр MediaScan
-    media_scanner.scan_paths()    # Запускаем сканирование путей
+    media_scanner.start_periodical_scan()    # Запускаем сканирование путей
