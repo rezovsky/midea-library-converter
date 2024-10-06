@@ -20,10 +20,10 @@ services:
     image: postgres
     container_name: midea_library_converter_db
     ports:
-      - ${POSTGRES_HOST_PORT}:5432
+      - 5433:5432
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=midea
+      - POSTGRES_PASSWORD=midea
       - POSTGRES_DB=midea_library_converter
     volumes:
       - postgres_data:/var/lib/postgresql/data 
