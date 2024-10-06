@@ -2,14 +2,12 @@ version: '3.8'
 
 services:
   app:
-    image: tiangolo/uvicorn-gunicorn-fastapi:python3.11
-    container_name: medea_library_converter  # Имя контейнера
+    build: .
+    container_name: medea_library_converter
     volumes:
-      - .:/app  # Монтируем локальную папку app в контейнер
+      - .:/app
     ports:
-      - "8000:8000"  # Пробрасываем порт 80 внутри контейнера на порт 8000 на хосте
+      - "8000:8000"
     environment:
-      - MODULE_NAME=main  # Имя модуля, который содержит ваше приложение FastAPI
-    restart: unless-stopped  # Перезапускать контейнер в случае остановки
-
-# Примечание: замените './app' на ваш путь к коду приложения
+      - MODULE_NAME=main
+    restart: unless-stopped
