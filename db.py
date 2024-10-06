@@ -72,10 +72,8 @@ class DB():
         for setting in default_settings:
             with self.session() as session:
                 existing_setting = session.query(MainSettings).filter_by(name=setting['name']).first()
-            if not existing_setting:
-                new_setting = MainSettings(
-                    name=setting['name'], value=setting['value'])
-                with self.session() as session:
+                if not existing_setting:
+                    new_setting = MainSettings(name=setting['name'], value=setting['value'])
                     session.add(new_setting)
                     session.commit()
 
@@ -86,24 +84,23 @@ class DB():
         for path in default_media_path:
             with self.session() as session:
                 existing_path = session.query(MediaPath).first()
-            if not existing_path:
-                new_path = MediaPath(id=str(uuid.uuid4()), path=path['path'], type=path['type'])
-                with self.session() as session:
+                if not existing_path:
+                    new_path = MediaPath(id=str(uuid.uuid4()), path=path['path'], type=path['type'])
                     session.add(new_path)
                     session.commit()    
 
 
     def add_file(self, path: str, duration: int = 0, frames: int = 0):
-        # Генерируем уникальный идентификатор для файла
-        new_file = VideoPath(
-            id=str(uuid.uuid4()),
-            path=path,
-            duration=duration,
-            frames=frames,
-            status="added")
 
         try:
             with self.session() as session:
+                new_file = VideoPath(
+                    id=str(uuid.uuid4()),
+                    path=path,
+                    duration=duration,
+                    frames=frames,
+                    status="added")
+
                 session.add(new_file)
                 session.commit()
             return {'status': 'success', "id": new_file.id}
@@ -185,11 +182,10 @@ class DB():
                 print(f"Файл '{id}' не найден в базе данных.")
 
     def set_media_path(self, path: str, type: str):
-        # Генерируем уникальный идентификатор для пути файла
-        new_path = MediaPath(id=str(uuid.uuid4()), path=path, type=type)
 
         try:
             with self.session() as session:
+                new_path = MediaPath(id=str(uuid.uuid4()), path=path, type=type)
                 session.add(new_path)
                 session.commit()
                 print(f"Путь '{path}' успешно добавлен в базу данных.")
@@ -217,8 +213,7 @@ class DB():
     def update_media_path_type(self, path_id: str, new_type: str):
         # Получаем медиа-путь по ID
         with self.session() as session:
-            media_path = session.query(
-                MediaPath).filter_by(id=path_id).first()
+            media_path = session.query(MediaPath).filter_by(id=path_id).first()
 
             if media_path:
                 media_path.type = new_type

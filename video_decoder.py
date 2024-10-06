@@ -15,19 +15,14 @@ class VideoEncoder:
             "480p": "854x480",
             "360p": "640x360"
         }  # параметры для конвертации
-        self.ffmpeg_path = os.path.join(
-            os.getcwd(), 'ffmpeg', 'bin', 'ffmpeg.exe')  # путь до ffmpeg
-        # Указываем путь до ffprobe
-        self.ffprobe_path = os.path.join(
-            os.getcwd(), 'ffmpeg', 'bin', 'ffprobe.exe'
-        )
+
         self.total_frames = 0
         self.duration_seconds = 0
         self.frame_rate = 0
 
     def get_video_info(self, video_path):
         cmd = [
-            self.ffprobe_path,
+            'ffprobe',
             '-hide_banner',
              '-i',
             video_path
@@ -101,7 +96,7 @@ class VideoEncoder:
         try:
             # Команда для ffmpeg
             cmd = [
-                self.ffmpeg_path,
+                'ffmpeg',
                 '-i', video_path,
                 '-vf', f"scale={self.quality_settings[quality]}",
                 '-map', '0:v',  # Копируем видеодорожку
