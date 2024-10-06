@@ -138,8 +138,7 @@ class VideoEncoder:
             process.wait()  # Ожидание завершения процесса
 
             if process.returncode == 0:
-                print(f"Видео '{video_path}' успешно сконвертировано в '{
-                      output_path}'.")
+                print(f"Видео '{video_path}' успешно сконвертировано в '{output_path}'.")
                 # Помечаем путь в БД как сконвертированный
                 self.db.set_file_status(video_file.id, "encoded")
                 # Удаляем исходный файл
@@ -149,8 +148,7 @@ class VideoEncoder:
                 # Переименовываем новый файл
                 os.rename(output_path, new_name)
             else:
-                print(f"Ошибка при кодировании видео. Код завершения: {
-                      process.returncode}")
+                print(f"Ошибка при кодировании видео. Код завершения: {process.returncode}")
 
         except Exception as e:
             print(f"Ошибка при кодировании видео: {e}")
