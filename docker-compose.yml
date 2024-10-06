@@ -7,8 +7,13 @@ services:
     volumes:
       - .:/app
       - /media:/app/media
+      - db_data:/app/db
     ports:
       - "8000:8000"
     environment:
       - MODULE_NAME=main
     restart: unless-stopped
+
+volumes:
+  db_data:
+    driver: local
