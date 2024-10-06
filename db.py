@@ -91,9 +91,8 @@ class DB():
 
 
     def add_file(self, path: str, duration: int = 0, frames: int = 0):
-
-        try:
-            with self.session() as session:
+        with self.session() as session:
+            try:
                 new_file = VideoPath(
                     id=str(uuid.uuid4()),
                     path=path,
@@ -103,15 +102,16 @@ class DB():
 
                 session.add(new_file)
                 session.commit()
-            return {'status': 'success', "id": new_file.id}
-        except Exception as e:
-            # Проверяем, была ли ошибка связана с уникальностью
-            if 'UNIQUE constraint failed' in str(e):
-                print(f"Файл с путем '{path}' уже существует в базе данных.")
-                return {'status': 'error', "message": f"Файл с путем '{path}' уже существует в базе данных."}
-            else:
-                print(f"Ошибка при добавлении файла: {e}")
-                return {'status': 'error', "message": f"Ошибка при добавлении файла: {e}"}
+                return {'status': 'success', "id": new_file.id}
+            except Exception as e:
+                session.rollback()
+                # Проверяем, была ли ошибка связана с уникальностью
+                if 'UNIQUE constraint failed' in str(e):
+                    print(f"Файл с путем '{path}' уже существует в базе данных.")
+                    return {'status': 'error', "message": f"Файл с путем '{path}' уже существует в базе данных."}
+                else:
+                    print(f"Ошибка при добавлении файла: {e}")
+                    return {'status': 'error', "message": f"Ошибка при добавлении файла: {e}"}
 
     def edit_encoded_frame(self, id: str, frame: int):
         with self.session() as session:
@@ -183,21 +183,22 @@ class DB():
 
     def set_media_path(self, path: str, type: str):
 
-        try:
-            with self.session() as session:
-                new_path = MediaPath(id=str(uuid.uuid4()), path=path, type=type)
-                session.add(new_path)
-                session.commit()
-                print(f"Путь '{path}' успешно добавлен в базу данных.")
-                return {'status': 'success', "message": f"Путь '{path}' успешно добавлен в базу данных."}
-        except Exception as e:
-            # Проверяем, была ли ошибка связана с уникальностью
-            if 'UNIQUE constraint failed' in str(e):
-                print(f"Путь '{path}' уже существует в базе данных.")
-                return {'status': 'error', "message": f"Путь '{path}' уже существует в базе данных."}
-            else:
-                print(f"Ошибка при добавлении файла: {e}")
-                return {'status': 'error', "message": f"Ошибка при добавлении файла: {e}"}
+        with self.session() as session:
+            try:
+                    new_path = MediaPath(id=str(uuid.uuid4()), path=path, type=type)
+                    session.add(new_path)
+                    session.commit()
+                    print(f"Путь '{path}' успешно добавлен в базу данных.")
+                    return {'status': 'success', "message": f"Путь '{path}' успешно добавлен в базу данных."}
+            except Exception as e:
+                session.rollback()
+                # Проверяем, была ли ошибка связана с уникальностью
+                if 'UNIQUE constraint failed' in str(e):
+                    print(f"Путь '{path}' уже существует в базе данных.")
+                    return {'status': 'error', "message": f"Путь '{path}' уже существует в базе данных."}
+                else:
+                    print(f"Ошибка при добавлении файла: {e}")
+                    return {'status': 'error', "message": f"Ошибка при добавлении файла: {e}"}
 
     def get_media_paths(self):
         # Получаем первый медиа-путь

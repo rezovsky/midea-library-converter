@@ -73,7 +73,8 @@ class VideoEncoder:
 
         if not os.path.exists(video_path):
             print(f"Видео '{video_path}' не существует.")
-            self.db.set_file_status(video_file.id, 'deleted')
+            with self.db as session:
+                session.set_file_status(video_file.id, 'deleted')
             return
 
         # Проверка на ошибки в передаче желаемого качества кодирования
@@ -106,7 +107,8 @@ class VideoEncoder:
                 '-strict', 'experimental',
                 output_path
             ]
-            self.db.set_file_status(video_file.id, "encode")
+            with self.db as session:
+                session.set_file_status(video_file.id, "encode")
             # Запуск ffmpeg через subprocess и вывод в реальном времени
             process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
@@ -126,8 +128,9 @@ class VideoEncoder:
                 # Поиск строки с текущим кадром
                 frame_match = re.search(r'frame=\s*(\d+)', line)
                 if frame_match:
-                    current_frame = int(frame_match.group(1))
-                    self.db.edit_encoded_frame(video_file.id, current_frame)
+                    with self.db as session:
+                        current_frame = int(frame_match.group(1))
+                        session.edit_encoded_frame(video_file.id, current_frame)
                     
 
             process.wait()  # Ожидание завершения процесса
@@ -135,7 +138,8 @@ class VideoEncoder:
             if process.returncode == 0:
                 print(f"Видео '{video_path}' успешно сконвертировано в '{output_path}'.")
                 # Помечаем путь в БД как сконвертированный
-                self.db.set_file_status(video_file.id, "encoded")
+                with self.db as session:
+                    session.set_file_status(video_file.id, "encoded")
                 # Удаляем исходный файл
                 os.remove(video_path)
                 # Генерируем новое имя для сконвертированного файла
@@ -151,17 +155,20 @@ class VideoEncoder:
 
     def encoded_start(self):
         print('Запущено периодическое кодирование...')
-        encode_files = self.db.get_encode_files()
-        if encode_files:
-            for encode_file in encode_files:
-                self.db.set_file_status(encode_file.id, "added")
-        while True:
-            video_files = self.db.get_added_files()
-            for video_file in video_files:
-                resolution = str(self.db.get_setting("resolution"))
-                self.encode_video(video_file, resolution)
-            encoded_period = int(self.db.get_setting('encoded_period'))
-            time.sleep(encoded_period)
+        with self.db as session:
+            encode_files = session.get_encode_files()
+            if encode_files:
+                for encode_file in encode_files:
+                    with self.db as session:
+                        session.set_file_status(encode_file.id, "added")
+            while True:
+                
+                video_files = session.get_added_files()
+                for video_file in video_files:
+                    resolution = str(session.get_setting("resolution"))
+                    self.encode_video(video_file, resolution)
+                encoded_period = int(session.get_setting('encoded_period'))
+                time.sleep(encoded_period)
 
 if __name__ == "__main__":
     db = DB()
