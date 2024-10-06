@@ -29,18 +29,20 @@ class MediaScan():
                 _, ext = os.path.splitext(filename)
                 if ext.lower() in self.video_extensions:
                     file_path = os.path.join(root, filename)
-                    file_info = self.video_encoder.get_video_info(file_path)
-                    # если данные о файле не получены по какой-то причине, то заменяем нулями
-                    if file_info is None:
-                        duration = 0
-                        frames = 0
-                    else:
-                        duration = file_info['duration']
-                        frames = file_info['frames']
-                    db_result = self.db.add_file(file_path, duration, frames)  # Добавляем файл в базу данных
-                    if db_result['status'] == 'success':
-                        print(f"Добавлен видеофайл: {file_path}")
-                        result[db_result['id']] = {'status': 'added', 'duration': duration, 'frames': frames}
+
+                    if self.db.check_file_by_path(file_path):
+                        file_info = self.video_encoder.get_video_info(file_path)
+                        # если данные о файле не получены по какой-то причине, то заменяем нулями
+                        if file_info is None:
+                            duration = 0
+                            frames = 0
+                        else:
+                            duration = file_info['duration']
+                            frames = file_info['frames']
+                        db_result = self.db.add_file(file_path, duration, frames)  # Добавляем файл в базу данных
+                        if db_result['status'] == 'success':
+                            print(f"Добавлен видеофайл: {file_path}")
+                            result[db_result['id']] = {'status': 'added', 'duration': duration, 'frames': frames}
         return result
     
     def start_periodical_scan(self):

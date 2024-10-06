@@ -112,6 +112,14 @@ class DB():
                 else:
                     print(f"Ошибка при добавлении файла: {e}")
                     return {'status': 'error', "message": f"Ошибка при добавлении файла: {e}"}
+    
+    def check_file_by_path(self, path: str):
+        with self.session() as session:
+            media = session.query(VideoPath).filter_by(path=path).first()
+            if not media:
+                return True
+            else:
+                return False
 
     def edit_encoded_frame(self, id: str, frame: int):
         with self.session() as session:
@@ -176,7 +184,7 @@ class DB():
 
             if file_to_update:
                 file_to_update.status = status
-                self.session.commit() 
+                session.commit() 
                 print(f"Статус файла '{id}' обновлен на '{status}'.")
             else:
                 print(f"Файл '{id}' не найден в базе данных.")
@@ -185,11 +193,11 @@ class DB():
 
         with self.session() as session:
             try:
-                    new_path = MediaPath(id=str(uuid.uuid4()), path=path, type=type)
-                    session.add(new_path)
-                    session.commit()
-                    print(f"Путь '{path}' успешно добавлен в базу данных.")
-                    return {'status': 'success', "message": f"Путь '{path}' успешно добавлен в базу данных."}
+                new_path = MediaPath(id=str(uuid.uuid4()), path=path, type=type)
+                session.add(new_path)
+                session.commit()
+                print(f"Путь '{path}' успешно добавлен в базу данных.")
+                return {'status': 'success', "message": f"Путь '{path}' успешно добавлен в базу данных."}
             except Exception as e:
                 session.rollback()
                 # Проверяем, была ли ошибка связана с уникальностью
@@ -219,7 +227,7 @@ class DB():
             if media_path:
                 media_path.type = new_type
                 try:
-                    self.session.commit()
+                    session.commit()
                     print(
                         f"Тип медиа-пути с ID '{path_id}' успешно обновлен на '{new_type}'.")
                     return {'status': 'success', "message": f"Тип медиа-пути с ID '{path_id}' успешно обновлен на '{new_type}'."}
