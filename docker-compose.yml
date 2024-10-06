@@ -3,7 +3,7 @@ version: '3.8'
 services:
   app:
     build: .
-    container_name: medea_library_converter
+    container_name: midea_library_converter
     volumes:
       - .:/app
       - /media:/app/media
