@@ -13,6 +13,7 @@ services:
     environment:
       - MODULE_NAME=main
     restart: unless-stopped
+    user: root  # Добавьте это, чтобы запускать контейнер от имени root
 
 volumes:
   db_data:
