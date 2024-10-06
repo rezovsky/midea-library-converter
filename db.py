@@ -7,8 +7,6 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 Base = declarative_base()
 
 # Определяем модель (таблицу)
-
-
 class VideoPath(Base):
     __tablename__ = 'video_path'
 
@@ -37,20 +35,23 @@ class MainSettings(Base):
 
 class DB():
     def __init__(self) -> None:
-        # Имя базы
-        db_name = "db/db.db"
+        # Параметры подключения к базе PostgreSQL
+        db_user = os.getenv("POSTGRES_USER", "midea")
+        db_password = os.getenv("POSTGRES_PASSWORD", "midea")
+        db_host = os.getenv("POSTGRES_HOST", "localhost")
+        db_port = os.getenv("POSTGRES_HOST_PORT", "9876")
+        db_name = os.getenv("POSTGRES_DB", "midea_library_converter")
 
-        # Проверяем, существует ли база данных
-        db_exists = os.path.exists(db_name)
+        # Создание движка для PostgreSQL
+        self.engine = create_engine(
+            f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}',
+            echo=False
+        )
 
-        # Создание движка для SQLite
-        self.engine = create_engine(f'sqlite:///{db_name}', echo=False)
+        # Автоматическое создание таблиц, если их нет
+        Base.metadata.create_all(self.engine)
 
-        if not db_exists:
-            Base.metadata.create_all(self.engine)
-            self.initialize_default_settings()
-
-        # Настраиваем сессию для взаимодействия с базой данных
+        # Настройка сессии для взаимодействия с базой данных
         self.Session = sessionmaker(bind=self.engine)
         self.session = self.Session()
 
