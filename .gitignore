@@ -162,6 +162,7 @@ cython_debug/
 
 db/
 media/
+ffmpeg/
 
 
 #midea_web_ui/
