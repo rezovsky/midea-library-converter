@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: tiangolo/uvicorn-gunicorn-fastapi:python3.12
+    image: tiangolo/uvicorn-gunicorn-fastapi:python3.11
     container_name: medea_library_converter  # Имя контейнера
     volumes:
       - .:/app  # Монтируем локальную папку app в контейнер
