@@ -1,5 +1,5 @@
 # Используйте базовый образ
-FROM python:3.12.6
+FROM python:3.12
 
 # Копируем requirements.txt и устанавливаем зависимости
 COPY requirements.txt /app/requirements.txt
