@@ -168,7 +168,6 @@ db.db
 
 midea_web_ui/.DS_Store
 midea_web_ui/node_modules
-midea_web_ui//dist
 
 
 # local env files
