@@ -1,5 +1,5 @@
 # Используйте базовый образ
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.11
+FROM python:3.12.6
 
 # Копируем requirements.txt и устанавливаем зависимости
 COPY requirements.txt /app/requirements.txt
