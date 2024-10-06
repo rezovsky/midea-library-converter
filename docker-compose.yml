@@ -2,19 +2,31 @@ version: '3.8'
 
 services:
   app:
-    build: .
     container_name: midea_library_converter
+    build: ./
+    depends_on:
+      - db
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn main:app --host 0.0.0.0 --port 8000'
     volumes:
-      - .:/app
-      - /media:/app/media
-      - db_data:/app/db
+      - ./:/app
+      - ${MEDIA_DIR}:/app/media
     ports:
-      - "8000:8000"
+      - ${APP_HOST_PORT}:8000
+    restart: always
+    env_file:
+      - .env
+    
+  db:
+    image: postgres
+    container_name: midea_library_converter_db
+    ports:
+      - ${POSTGRES_HOST_PORT}:5432
     environment:
-      - MODULE_NAME=main
-    restart: unless-stopped
-    user: root  # Добавьте это, чтобы запускать контейнер от имени root
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=midea_library_converter
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    restart: always
 
-volumes:
-  db_data:
-    driver: local
+
