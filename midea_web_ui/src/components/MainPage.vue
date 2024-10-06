@@ -3,7 +3,7 @@
         <div class="main-content">
             <el-row justify="center">
                 <el-col :span="12">
-                    <h1>Медиатека:</h1>
+                    <h1>{{ media_paths }}</h1>
                     <el-container v-if="encode_files.length > 0">
                         <el-header style="height: 20px;">Кодируется</el-header>
                         <el-main>
@@ -48,6 +48,7 @@ export default {
             added_files: [],
             encode_files: [],
             encoded_files: [],
+            media_paths: null,
             intervalId: null,
         };
     },
@@ -68,9 +69,20 @@ export default {
                     console.error('Ошибка при получении файлов:', error);
                 });
         },
+        getMediaPaths() {
+            this.$axios
+            .get('/db/paths')
+            .then((response) => {
+                this.media_paths = response.data[0].path;
+            })
+            .catch((error) => {
+                console.error('Ошибка при получении путей:', error);
+            });
+        }
     },
     mounted() {
         // Запускаем функцию сразу при монтировании компонента
+        this.getMediaPaths();
         this.fetchData();
 
         // Устанавливаем интервал для повторного запуска fetchData каждые 5 секунд

@@ -10,7 +10,7 @@ const app = createApp(App);
 app.config.globalProperties.$axios = axios;
 
 // Устанавливаем базовый URL для axios
-axios.defaults.baseURL = 'http://localhost:8000/';
+axios.defaults.baseURL = '/';
 
 // Используем Element Plus
 app.use(ElementPlus);

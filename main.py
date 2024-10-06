@@ -1,6 +1,9 @@
+import os
 from threading import Thread
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from db import DB
 from media_scan import MediaScan
@@ -11,7 +14,7 @@ app = FastAPI()
 
 # Настройка CORS
 origins = [
-    "http://localhost:8080"
+    "http://localhost:8000"
 ]
 
 app.add_middleware(
@@ -22,27 +25,54 @@ app.add_middleware(
     allow_headers=["*"],  # Разрешенные заголовки
 )
 
+# Указываем папку со статическими файлами
+css_directory = os.path.join(os.getcwd(), "midea_web_ui", "dist", "css")
+app.mount("/css", StaticFiles(directory=css_directory), name="css")
+js_directory = os.path.join(os.getcwd(), "midea_web_ui", "dist", "js")
+app.mount("/js", StaticFiles(directory=js_directory), name="js")
+static_directory = os.path.join(os.getcwd(), "midea_web_ui", "dist")
+
+
+# Обработка запроса на корень
+@app.get("/", response_class=HTMLResponse)  # Указываем, что возвращаем HTML
+async def read_root():
+    # Можно вернуть основной HTML файл
+    html_file_path = os.path.join(static_directory, "index.html")
+    if os.path.exists(html_file_path):
+        with open(html_file_path, "r", encoding="utf-8") as file:
+            content = file.read()
+        return HTMLResponse(content=content)  # Возвращаем HTMLResponse
+    return HTMLResponse(content="Index file not found.", status_code=404)  # Возвращаем ошибку 404 в случае отсутствия файла
+
+
 db = DB()
 scanner = MediaScan(db)
 encoder = VideoEncoder(db)
 
 # автоматический запуск сканирования медиа папок
+
+
 def start_periodical_scan():
     period_scanner_db = DB()
     period_scanner = MediaScan(period_scanner_db)
     period_scanner.start_periodical_scan()
 
+
 scanner_thread = Thread(target=start_periodical_scan)
 scanner_thread.start()
 
 # автоматический запуск кодирования файлов
+
+
 def start_periodical_encoded():
     period_encoded_db = DB()
     period_encoded = VideoEncoder(period_encoded_db)
     period_encoded.encoded_start()
 
+
 encoded_thread = Thread(target=start_periodical_encoded)
 encoded_thread.start()
+
 
 # получаем все файлы из базы данных
 
@@ -51,6 +81,8 @@ def get_files():
     return db.get_files()
 
 # запуск сканирования медиа папок
+
+
 @app.get("/scan/path")
 def open_main_page():
     result = scanner.scan_paths()
