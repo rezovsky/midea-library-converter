@@ -28,24 +28,42 @@ class VideoEncoder:
     def get_video_info(self, video_path):
         cmd = [
             self.ffprobe_path,
-            '-v', 'error',
-            '-select_streams', 'v:0',
-            '-show_entries', 'stream=duration,nb_frames,r_frame_rate',
-            '-of', 'default=noprint_wrappers=1:nokey=1',
+            '-hide_banner',
+             '-i',
             video_path
         ]
         try:
-            output = subprocess.check_output(
-                cmd, universal_newlines=True).strip().splitlines()
-            # Перебор вывода и замена N/A на 0
-            for i in range(len(output)):
-                if output[i] == 'N/A':
-                    output[i] = 0  # Заменяем N/A на 0
+            process  = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            print(video_path)
+            self.total_frames = 0
+            self.duration_seconds = 0
+            self.frame_rate = 0
+            while True:
+                output = process.stdout.readline()
 
-            self.frame_rate = float(
-                int(output[0].split('/')[0])/int(output[0].split('/')[1]))
-            self.duration_seconds = float(output[1])  # Длительность в секундах
-            self.total_frames = round(self.duration_seconds * self.frame_rate)
+                # Если строка пуста и процесс завершился — выходим
+                if output == "" and process.poll() is not None:
+                    break
+
+                # Ищем длительность в секундах
+                match = re.search(r"Duration:\s(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?", output)
+                if match and self.duration_seconds == 0:
+                    hours, minutes, seconds, milliseconds = match.groups()
+                    self.duration_seconds = float(int(hours) * 3600 + int(minutes) * 60 + int(seconds) + int(milliseconds) / 1000)
+                    print(self.duration_seconds)
+                
+                # Поиск частоты кадров
+                match_fps = re.search(r"(\d+(?:\.\d+)?)\s*fps", output)
+                if match_fps and self.frame_rate == 0:
+                    self.frame_rate = float(match_fps.group(1))
+                    print(self.frame_rate)
+
+                # вычисляем кол-во кадров
+                if self.duration_seconds and self.frame_rate:
+                    self.total_frames = round(self.duration_seconds * self.frame_rate)
+                    print(self.total_frames)
+                    break
             return {'duration': round(self.duration_seconds), 'frames': round(self.total_frames)}
 
         except subprocess.CalledProcessError as e:
@@ -157,3 +175,4 @@ if __name__ == "__main__":
     video_encoder = VideoEncoder(db)  # Создаем экземпляр VideoEncoder
 
     video_encoder.encoded_start()
+

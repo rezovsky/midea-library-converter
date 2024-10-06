@@ -71,10 +71,15 @@ export default {
 
 <style scoped>
 .file-card {
+    padding: 0px;
+    margin: 0px;
     border-radius: 15px;
     margin-bottom: 10px;
 }
-
+.file-content {
+    padding: 0px;
+    margin: 0px;
+}
 .file-content h4 {
     font-size: 1.2rem;
 }
