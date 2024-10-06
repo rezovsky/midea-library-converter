@@ -4,7 +4,7 @@
             <el-row justify="center">
                 <el-col :span="12">
                     <h1>Медиатека:</h1>
-                    <el-container>
+                    <el-container v-if="encode_files.length > 0">
                         <el-header style="height: 20px;">Кодируется</el-header>
                         <el-main>
                             <div v-for="(file, index) in encode_files" :key="index">
@@ -12,7 +12,7 @@
                             </div>
                         </el-main>
                     </el-container>
-                    <el-container>
+                    <el-container v-if="added_files.length > 0">
                         <el-header style="height: 20px;">В очереди</el-header>
                         <el-main>
                             <div v-for="(file, index) in added_files" :key="index">
@@ -20,8 +20,8 @@
                             </div>
                         </el-main>
                     </el-container>
-                    <el-container>
-                        <el-header style="height: 20px;">Закодировано</el-header>
+                    <el-container v-if="encoded_files.length > 0">
+                        <el-header style="height: 20px;">Завершено</el-header>
                         <el-main>
                             <div v-for="(file, index) in encoded_files" :key="index">
                                 <FileItem :file="file" />
@@ -45,9 +45,9 @@ export default {
 
     data() {
         return {
-            added_files: null,
-            encode_files: null,
-            encoded_files: null,
+            added_files: [],
+            encode_files: [],
+            encoded_files: [],
             intervalId: null,
         };
     },
@@ -60,6 +60,7 @@ export default {
 
                     // Рассортируем файлы по статусу
                     this.added_files = files.filter(file => file.status === 'added');
+                    console.log(this.added_files);
                     this.encode_files = files.filter(file => file.status === 'encode');
                     this.encoded_files = files.filter(file => file.status === 'encoded');
                 })

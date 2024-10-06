@@ -58,6 +58,11 @@ class VideoEncoder:
     def encode_video(self, video_file: 'VideoPath', quality: str):
         video_path = video_file.path
 
+        if not os.path.exists(video_path):
+            print(f"Видео '{video_path}' не существует.")
+            self.db.set_file_status(video_file.id, 'deleted')
+            return
+
         # Проверка на ошибки в передаче желаемого качества кодирования
         if quality not in self.quality_settings:
             print("Неподдерживаемое качество. Доступные варианты: 1080p, 720p, 480p, 360p.")

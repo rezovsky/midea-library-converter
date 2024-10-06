@@ -2,7 +2,8 @@
     <el-card class="file-card" :style="cardStyle" shadow="hover">
         <div class="file-content">
             <h4>{{ fileName }}</h4>
-            <el-progress v-if="file.frames > 0 && file.status === 'encode'" :percentage="progress" :text-inside="true" stroke-width="18" />
+            <el-progress v-if="file.frames > 0 && file.status === 'encode'" :percentage="progress" :text-inside="true"
+                stroke-width="18" />
             <p v-if="formattedDuration">Длительность: {{ formattedDuration }}</p>
         </div>
     </el-card>
@@ -37,7 +38,7 @@ export default {
         },
         progress() {
             // Вычисляем процент прогресса
-            return (this.file.frame / this.file.frames) * 100;
+            return Math.round((this.file.frame / this.file.frames) * 100);
         },
         formattedDuration() {
             // Форматируем длительность из секунд в часы:минуты:секунды
@@ -47,7 +48,22 @@ export default {
             const minutes = Math.floor((this.file.duration % 3600) / 60);
             const seconds = this.file.duration % 60;
 
-            return `${hours}ч ${minutes}м ${seconds}с`;
+            let formatted = '';
+
+            // Добавляем часы, если они есть
+            if (hours > 0) {
+                formatted += `${hours}ч `;
+            }
+
+            // Добавляем минуты, если они есть
+            if (minutes > 0 || hours > 0) {
+                formatted += `${minutes}м `;
+            }
+
+            // Добавляем секунды всегда
+            formatted += `${seconds}с`;
+
+            return formatted.trim();
         },
     },
 };
