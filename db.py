@@ -75,6 +75,17 @@ class DB():
                     name=setting['name'], value=setting['value'])
                 session.add(new_setting)
 
+        default_media_path = [
+            {'path': '/app/media', 'type': 'video'},
+        ]
+        # Добавляем медиа-пути только если их ещё нет в базе
+        for path in default_media_path:
+            existing_path = session.query(MediaPath).first()
+            if not existing_path:
+                new_path = MediaPath(
+                    id=str(uuid.uuid4()), path=path['path'], type=path['type'])
+                session.add(new_path)
+
         # Применяем изменения
         session.commit()
         session.close()
@@ -134,7 +145,7 @@ class DB():
         else:
             print("Нет файлов со статусом 'added'.")
             return []  # Возвращаем None, если файлов нет
-        
+
     def get_files(self):
         files = self.session.query(VideoPath).all()
         if files:
@@ -240,7 +251,7 @@ class DB():
         result = self.session.query(MainSettings.value).filter_by(
             name=setting_name).first()
         return result[0] if result else None
-    
+
     def set_setting(self, setting_name: str, setting_value: str):
         result = self.session.query(MainSettings).filter_by(
             name=setting_name).first()
