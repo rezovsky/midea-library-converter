@@ -1,9 +1,9 @@
 <template>
     <el-card class="file-card" :style="cardStyle" shadow="hover">
-        <div class="file-content">
+        <div class="file-content" style="padding: 0px">
             <h4>{{ fileName }}</h4>
             <el-progress v-if="file.frames > 0 && file.status === 'encode'" :percentage="progress" :text-inside="true"
-                stroke-width="18" />
+                :stroke-width="18" />
             <p v-if="formattedDuration">Длительность: {{ formattedDuration }}</p>
         </div>
     </el-card>
@@ -23,18 +23,18 @@ export default {
             // Цвет карты в зависимости от статуса
             switch (this.file.status) {
                 case "encode":
-                    return "background-color: #faecd8; border-color: #f3d19e"; // Желтый для encoding
+                    return "background-color: #d9ecff; border-color: #a0cfff;"; // Синий
                 case "added":
-                    return "background-color: #e1f3d8; border-color: #b3e19d"; // Зеленый для добавленных
+                    return "background-color: #faecd8; border-color: #f3d19e;"; // Желтый
                 case "encoded":
-                    return "background-color: #d9ecff; border-color: #a0cfff"; // Синий для закодированных
+                    return "background-color: #e1f3d8; border-color: #b3e19d;"; // Зеленый
                 default:
-                    return "background-color: #e9e9eb; border-color: #c8c9cc"; // Серый по умолчанию
+                    return "background-color: #e9e9eb; border-color: #c8c9cc;"; // Серый
             }
         },
         fileName() {
             // Получаем только имя файла из пути
-            return this.file.path.split("\\").pop();
+            return this.file.path.split("/").pop();
         },
         progress() {
             // Вычисляем процент прогресса
