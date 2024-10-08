@@ -36,11 +36,11 @@ class MainSettings(Base):
 class DB():
     def __init__(self) -> None:
         # Параметры подключения к базе PostgreSQL
-        db_user = os.getenv("POSTGRES_USER", "midea")
-        db_password = os.getenv("POSTGRES_PASSWORD", "midea")
-        db_host = os.getenv("POSTGRES_HOST", "db")
-        db_port = os.getenv("POSTGRES_HOST_PORT", "5432")
-        db_name = os.getenv("POSTGRES_DB", "midea_library_converter")
+        db_user = os.getenv("POSTGRES_USER")
+        db_password = os.getenv("POSTGRES_PASSWORD")
+        db_host = os.getenv("POSTGRES_HOST")
+        db_port = os.getenv("POSTGRES_HOST_PORT")
+        db_name = os.getenv("POSTGRES_DB")
 
         # Создание движка для PostgreSQL
         self.engine = create_engine(

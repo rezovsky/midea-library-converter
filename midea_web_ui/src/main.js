@@ -10,7 +10,7 @@ const app = createApp(App);
 app.config.globalProperties.$axios = axios;
 
 // Устанавливаем базовый URL для axios
-axios.defaults.baseURL = '/';
+axios.defaults.baseURL = 'http://docker.r41:8000/';
 
 // Используем Element Plus
 app.use(ElementPlus);

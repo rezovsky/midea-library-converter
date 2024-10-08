@@ -1,20 +1,24 @@
 import os
 from threading import Thread
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+import uvicorn
 
 from db import DB
 from media_scan import MediaScan
 from video_decoder import VideoEncoder
 
 
+load_dotenv()
+
 app = FastAPI()
 
 # Настройка CORS
 origins = [
-    "http://localhost:8000"
+    "http://localhost:8080"
 ]
 
 app.add_middleware(
@@ -49,29 +53,30 @@ db = DB()
 scanner = MediaScan(db)
 encoder = VideoEncoder(db)
 
+is_scaner = os.getenv("SCANER")
+is_converter = os.getenv("CONVERTER")
+
 # автоматический запуск сканирования медиа папок
-
-
 def start_periodical_scan():
     period_scanner_db = DB()
     period_scanner = MediaScan(period_scanner_db)
     period_scanner.start_periodical_scan()
 
 
-scanner_thread = Thread(target=start_periodical_scan)
-scanner_thread.start()
+if is_scaner:
+    scanner_thread = Thread(target=start_periodical_scan)
+    scanner_thread.start()
 
 # автоматический запуск кодирования файлов
-
-
 def start_periodical_encoded():
     period_encoded_db = DB()
     period_encoded = VideoEncoder(period_encoded_db)
     period_encoded.encoded_start()
 
 
-encoded_thread = Thread(target=start_periodical_encoded)
-encoded_thread.start()
+if is_converter:
+    encoded_thread = Thread(target=start_periodical_encoded)
+    encoded_thread.start()
 
 
 # получаем все файлы из базы данных
@@ -156,3 +161,7 @@ def update_media_path_type(path_id: str, new_type: str):
 @app.delete("/db/path/{path_id}")
 def delete_media_path(path_id: str):
     return db.delete_media_path(path_id)
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
