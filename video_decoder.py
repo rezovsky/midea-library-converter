@@ -1,3 +1,4 @@
+import logging
 import re
 import subprocess
 import os
@@ -5,6 +6,7 @@ import time
 from data_processing import DPVideoInfo
 from db import DB, VideoPath
 
+logger = logging.getLogger(__name__)
 
 class VideoEncoder:
     def __init__(self, db):
@@ -60,23 +62,21 @@ class VideoEncoder:
             return DPVideoInfo(duration=round(self.duration_seconds), frames=round(self.total_frames))
 
         except subprocess.CalledProcessError as e:
-            print(f"Ошибка при получении информации о видео: {e}")
             return DPVideoInfo(error=f"Ошибка при получении информации о видео: {e}")
         except ValueError as e:
-            print(f"Ошибка при преобразовании данных: {e}")
             return DPVideoInfo(error=f"Ошибка при преобразовании данных: {e}")
 
     def encode_video(self, video_file: 'VideoPath', quality: str):
         video_path = video_file.path
 
         if not os.path.exists(video_path):
-            print(f"Видео '{video_path}' не существует.")
+            logger.error(f"Видео '{video_path}' не существует.")
             self.db.set_file_status(video_file.id, 'deleted')
             return
 
         # Проверка на ошибки в передаче желаемого качества кодирования
         if quality not in self.quality_settings:
-            print("Неподдерживаемое качество. Доступные варианты: 1080p, 720p, 480p, 360p.")
+            logger.error("Неподдерживаемое качество. Доступные варианты: 1080p, 720p, 480p, 360p.")
             return
 
         # Генерируем путь к перекодированному файлу
@@ -86,7 +86,7 @@ class VideoEncoder:
         if os.path.exists(output_path):
             os.remove(output_path)
 
-        print(f"Видео '{video_path}' конвертируется в '{output_path}'.")
+        logger.info(f"Видео '{video_path}' конвертируется в '{output_path}'.")
 
         # Сначала получаем информацию о видео
         self.get_video_info(video_path)
@@ -133,7 +133,7 @@ class VideoEncoder:
             process.wait()  # Ожидание завершения процесса
 
             if process.returncode == 0:
-                print(f"Видео '{video_path}' успешно сконвертировано в '{output_path}'.")
+                logger.info(f"Видео '{video_path}' успешно сконвертировано в '{output_path}'.")
                 # Помечаем путь в БД как сконвертированный
                 self.db.set_file_status(video_file.id, "encoded")
                 # Удаляем исходный файл
@@ -143,14 +143,14 @@ class VideoEncoder:
                 # Переименовываем новый файл
                 os.rename(output_path, new_name)
             else:
-                print(f"Ошибка при кодировании видео. Код завершения: {process.returncode}")
+                logger.error(f"Ошибка при кодировании видео. Код завершения: {process.returncode}")
 
         except Exception as e:
-            print(f"Ошибка при кодировании видео: {e}")
+            logger.error(f"Ошибка при кодировании видео: {e}")
 
 
     def encoded_start(self):
-        print('Запущено периодическое кодирование...')
+        logger.info('Запущено периодическое кодирование...')
 
         encode_files = self.db.get_encode_files()
         if encode_files:
