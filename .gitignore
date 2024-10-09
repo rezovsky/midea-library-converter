@@ -189,3 +189,5 @@ midea_web_ui/*.ntvs*
 midea_web_ui/*.njsproj
 midea_web_ui/*.sln
 midea_web_ui/*.sw?
+
+app.log

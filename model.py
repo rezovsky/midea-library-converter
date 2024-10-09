@@ -20,8 +20,8 @@ class MediaPath(IdUsage):
     name = Column(String, unique=True, nullable=False)
     type = Column(String, nullable=False)
     convert_resolution = Column(String, nullable=False)
-    auto_scan = Column(Boolean)
-    auto_convert = Column(Boolean)
+    auto_scan = Column(Boolean, nullable=True)
+    auto_convert = Column(Boolean, nullable=True)
 
     videos = relationship('VideoPath', back_populates='media_path')
 

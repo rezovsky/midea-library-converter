@@ -1,7 +1,9 @@
+import logging
 import os
 
 from model import MediaPath, VideoPath
 
+logger = logging.getLogger(__name__)
 
 class DPFilePath:
     def __init__(self, file_path: str) -> None:
@@ -23,9 +25,12 @@ class DPFilePath:
 
 
 class DPMediaPath:
-    def __init__(self, data: MediaPath) -> None:
+    def __init__(self, data: MediaPath = None, error: str = None) -> None:
         self.data = data
         self.name = os.path.basename(data.path)
+        self.error = error
+        if self.error is not None:
+            logger.error(self.error)
         
     def name(self) -> str:
         return self.name
@@ -35,6 +40,9 @@ class DPMediaPath:
     
     def data(self) -> MediaPath:
         return self.data
+    
+    def error(self) -> str:
+        return self.error
 
 
 
@@ -60,7 +68,7 @@ class DPVideoPath:
         self.data = data
         self.error = error
         if self.error is not None:
-            print(self.error)
+            logger.error(self.error)
     
     def data(self) -> VideoPath:
         return self.data

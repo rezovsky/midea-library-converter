@@ -4,7 +4,9 @@ from data_processing import DPFilePath, DPMediaPath
 from db import DB
 from model import MediaPath
 from video_decoder import VideoEncoder
+import logging
 
+logger = logging.getLogger(__name__)
 
 class MediaScan():
     def __init__(self, db) -> None:
@@ -20,7 +22,7 @@ class MediaScan():
 
     def scan_path(self, path_data: MediaPath) -> None:
         media_path = DPMediaPath(path_data)
-        print(f"Сканируем медиатеку {media_path.formatted_name}")
+        logger.info(f"Сканируем медиатеку {media_path.formatted_name}")
         if os.path.exists(media_path.data.path):
             self.scan_file_path(media_path.data)
 
@@ -37,10 +39,10 @@ class MediaScan():
 
                         db_result = self.db.add_file(path_data, file_data, file_info)
                         if not db_result.error:
-                            print(f"Добавлен видеофайл: {file_data.file_path}")
+                            logger.info(f"Добавлен видеофайл: {file_data.file_path}")
 
     def start_periodical_scan(self):
-        print("Периодическое сканирование запущено...")
+        logger.info("Периодическое сканирование запущено...")
         while True:
             self.scan_paths()
             scan_period = int(self.db.get_setting('scan_period'))

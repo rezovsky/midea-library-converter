@@ -1,5 +1,6 @@
+import logging
 from dotenv import load_dotenv
-from data_processing import DPFilePath, DPVideoInfo, DPVideoPath
+from data_processing import DPFilePath, DPMediaPath, DPVideoInfo, DPVideoPath
 from model import Base, MainSettings, MediaPath, VideoPath
 import os
 import uuid
@@ -17,24 +18,22 @@ class DB():
         db_port = os.getenv("POSTGRES_HOST_PORT")
         db_name = os.getenv("POSTGRES_DB")
 
-        # Создание движка для PostgreSQL
+        self.logger = logging.getLogger(__name__)
+
         self.engine = create_engine(
             f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}',
             echo=False
         )
 
-        # Автоматическое создание таблиц, если их нет
         Base.metadata.create_all(self.engine)
 
-        # Настройка сессии для взаимодействия с базой данных
         self.session = sessionmaker(bind=self.engine)
 
-        # Инициализация дефолтных настроек
         self.initialize_default_settings()
 
     # Инициализация дефолтных настройок
     def initialize_default_settings(self):
-        print('Инициализация дефолтных настройок...')
+        self.logger.info('Инициализация дефолтных настройок...')
 
         default_settings = [
             {'name': 'resolution', 'value': '720p'},
@@ -54,7 +53,7 @@ class DB():
                 session.commit()
             except Exception as e:
                 session.rollback()
-                print(f"Ошибка при инициализации настроек: {e}")
+                self.logger.error(f"Ошибка при инициализации настроек: {e}")
 
     def add_file(self, media_path_data: MediaPath, file_data: DPFilePath, video_info: DPVideoInfo) -> DPVideoPath:
         with self.session() as session:
@@ -99,7 +98,7 @@ class DB():
             if files:
                 return files
             else:
-                print("Нет файлов со статусом 'encode'.")
+                self.logger.info("Нет файлов со статусом 'encode'.")
                 return []
 
     def get_encoded_frame(self, id: str):
@@ -117,7 +116,7 @@ class DB():
             if files:
                 return files
             else:
-                print("Нет файлов со статусом 'added'.")
+                self.logger.info("Нет файлов со статусом 'added'.")
                 return []
 
     def get_files(self):
@@ -137,7 +136,7 @@ class DB():
             if files:
                 return files  # Возвращаем весь объект VideoPath
             else:
-                print("Нет файлов со статусом 'encoded'.")
+                self.logger.info("Нет файлов со статусом 'encoded'.")
                 return []  # Возвращаем None, если файлов нет
 
     def set_file_status(self, id: uuid.UUID, status: str):
@@ -149,27 +148,42 @@ class DB():
             if file_to_update:
                 file_to_update.status = status
                 session.commit()
-                print(f"Статус файла '{id}' обновлен на '{status}'.")
+                self.logger.info(f"Статус файла '{id}' обновлен на '{status}'.")
             else:
-                print(f"Файл '{id}' не найден в базе данных.")
+                self.logger.error(f"Файл '{id}' не найден в базе данных.")
 
-    def set_media_path(self, path: str, type: str):
+    def add_media_path(
+        self, 
+        path: str, 
+        type: str, 
+        name: str = None, 
+        convert_resolution: str = None, 
+        auto_scan: bool = None, 
+        auto_convert: bool = None
+        ) -> DPMediaPath:
         with self.session() as session:
             try:
-                new_path = MediaPath(path=path, type=type)
+                new_path = MediaPath(
+                        path=path, 
+                        type=type, 
+                        name=name, 
+                        convert_resolution=convert_resolution, 
+                        auto_scan=auto_scan, 
+                        auto_convert=auto_convert
+                    )
+                new_path_data = DPMediaPath(data=new_path)
+                if new_path.name is None:
+                    new_path.name = DPMediaPath.formatted_name
+                
                 session.add(new_path)
                 session.commit()
-                print(f"Путь '{path}' успешно добавлен в базу данных.")
-                return {'status': 'success', "message": f"Путь '{path}' успешно добавлен в базу данных."}
+                return DPMediaPath(data=new_path)
             except Exception as e:
                 session.rollback()
-                # Проверяем, была ли ошибка связана с уникальностью
                 if 'UNIQUE constraint failed' in str(e):
-                    print(f"Путь '{path}' уже существует в базе данных.")
-                    return {'status': 'error', "message": f"Путь '{path}' уже существует в базе данных."}
+                    return DPMediaPath(error=f"Путь '{path}' уже существует в базе данных.")
                 else:
-                    print(f"Ошибка при добавлении файла: {e}")
-                    return {'status': 'error', "message": f"Ошибка при добавлении файла: {e}"}
+                    return DPMediaPath(error=f"Ошибка при добавлении файла: {e}")
 
     def get_media_paths(self) -> list:
         with self.session() as session:
@@ -177,7 +191,7 @@ class DB():
             if paths:
                 return paths
             else:
-                print("Нет медиатек в базе данных.")
+                self.logger.info("Нет медиатек в базе данных.")
                 return []
 
     def update_media_path_type(self, path_id: uuid.UUID, new_type: str):
@@ -189,15 +203,15 @@ class DB():
                 media_path.type = new_type
                 try:
                     session.commit()
-                    print(
+                    self.logger.info(
                         f"Тип медиа-пути с ID '{path_id}' успешно обновлен на '{new_type}'.")
                     return {'status': 'success', "message": f"Тип медиа-пути с ID '{path_id}' успешно обновлен на '{new_type}'."}
                 except Exception as e:
                     self.session.rollback()  # Откатываем изменения в случае ошибки
-                    print(f"Ошибка при обновлении типа: {e}")
+                    self.logger.error(f"Ошибка при обновлении типа: {e}")
                     return {'status': 'error', "message": f"Ошибка при обновлении типа: {e}"}
             else:
-                print(f"Медиа-путь с ID '{path_id}' не найден.")
+                self.logger.error(f"Медиа-путь с ID '{path_id}' не найден.")
                 return {'status': 'error', "message": f"Медиа-путь с ID '{path_id}' не найден."}
 
     def delete_media_path(self, path_id: uuid.UUID):
@@ -210,13 +224,13 @@ class DB():
                 try:
                     session.delete(media_path)  # Удаляем запись
                     session.commit()  # Сохраняем изменения
-                    print(f"Медиа-путь с ID '{path_id}' успешно удален.")
+                    self.logger.info(f"Медиа-путь с ID '{path_id}' успешно удален.")
                     return {'status': 'success', "message": f"Медиа-путь с ID '{path_id}' успешно удален."}
                 except Exception as e:
-                    print(f"Ошибка при удалении медиа-пути: {e}")
+                    self.logger.error(f"Ошибка при удалении медиа-пути: {e}")
                     return {'status': 'error', "message": f"Ошибка при удалении медиа-пути: {e}"}
             else:
-                print(f"Медиа-путь с ID '{path_id}' не найден.")
+                self.logger.error(f"Медиа-путь с ID '{path_id}' не найден.")
                 return {'status': 'error', "message": f"Медиа-путь с ID '{path_id}' не найден."}
 
     def get_setting(self, setting_name: str):
