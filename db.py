@@ -1,4 +1,6 @@
-from model import Base
+from dotenv import load_dotenv
+from data_processing import DPFilePath, DPVideoInfo, DPVideoPath
+from model import Base, MainSettings, MediaPath, VideoPath
 import os
 import uuid
 from sqlalchemy import create_engine
@@ -7,7 +9,8 @@ from sqlalchemy.orm import sessionmaker
 
 class DB():
     def __init__(self) -> None:
-        # Параметры подключения к базе PostgreSQL
+        load_dotenv()        
+        
         db_user = os.getenv("POSTGRES_USER")
         db_password = os.getenv("POSTGRES_PASSWORD")
         db_host = os.getenv("POSTGRES_HOST")
@@ -33,59 +36,47 @@ class DB():
     def initialize_default_settings(self):
         print('Инициализация дефолтных настройок...')
 
-        # Список дефолтных настроек
         default_settings = [
             {'name': 'resolution', 'value': '720p'},
             {'name': 'scan_period', 'value': '300'},
             {'name': 'encoded_period', 'value': '600'},
         ]
+        
+        with self.session() as session:
+            try:
+                for setting in default_settings:
+                    existing_setting = session.query(
+                        MainSettings).filter_by(name=setting['name']).first()
+                    if not existing_setting:
+                        new_setting = MainSettings(
+                            name=setting['name'], value=setting['value'])
+                        session.add(new_setting)
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                print(f"Ошибка при инициализации настроек: {e}")
 
-        # Добавляем настройки только если их ещё нет в базе
-        for setting in default_settings:
-            with self.session() as session:
-                existing_setting = session.query(
-                    MainSettings).filter_by(name=setting['name']).first()
-                if not existing_setting:
-                    new_setting = MainSettings(
-                        name=setting['name'], value=setting['value'])
-                    session.add(new_setting)
-                    session.commit()
-
-        # default_media_path = [
-        #     {'path': '/app/media', 'type': 'video'},
-        # ]
-        # # Добавляем медиа-пути только если их ещё нет в базе
-        # for path in default_media_path:
-        #     with self.session() as session:
-        #         existing_path = session.query(MediaPath).first()
-        #         if not existing_path:
-        #             new_path = MediaPath(id=str(uuid.uuid4()), path=path['path'], type=path['type'])
-        #             session.add(new_path)
-        #             session.commit()
-
-    def add_file(self, path: str, duration: int = 0, frames: int = 0):
+    def add_file(self, media_path_data: MediaPath, file_data: DPFilePath, video_info: DPVideoInfo) -> DPVideoPath:
         with self.session() as session:
             try:
                 new_file = VideoPath(
-                    id=str(uuid.uuid4()),
-                    path=path,
-                    duration=duration,
-                    frames=frames,
+                    media_path_id=media_path_data.id,
+                    path=file_data.path_without_ext,
+                    file_extension=file_data.file_ext,
+                    duration=video_info.duration,
+                    frames=video_info.frames,
                     status="added")
 
                 session.add(new_file)
                 session.commit()
-                return {'status': 'success', "id": new_file.id}
+                return DPVideoPath(data=new_file)
             except Exception as e:
                 session.rollback()
                 # Проверяем, была ли ошибка связана с уникальностью
                 if 'UNIQUE constraint failed' in str(e):
-                    print(f"Файл с путем '{
-                          path}' уже существует в базе данных.")
-                    return {'status': 'error', "message": f"Файл с путем '{path}' уже существует в базе данных."}
+                    return DPVideoPath(error=f"Файл с путем '{file_data.path}' уже существует в базе данных.")
                 else:
-                    print(f"Ошибка при добавлении файла: {e}")
-                    return {'status': 'error', "message": f"Ошибка при добавлении файла: {e}"}
+                    return DPVideoPath(error=f"Ошибка при добавлении файла: {e}")
 
     def check_file_by_path(self, path: str):
         with self.session() as session:
@@ -120,15 +111,14 @@ class DB():
                 return None
 
     def get_added_files(self):
-        # Получаем первый файл со статусом "added"
         with self.session() as session:
             files = session.query(VideoPath).filter_by(status="added").all()
 
             if files:
-                return files  # Возвращаем весь объект VideoPath
+                return files
             else:
                 print("Нет файлов со статусом 'added'.")
-                return []  # Возвращаем None, если файлов нет
+                return []
 
     def get_files(self):
         with self.session() as session:
@@ -150,7 +140,7 @@ class DB():
                 print("Нет файлов со статусом 'encoded'.")
                 return []  # Возвращаем None, если файлов нет
 
-    def set_file_status(self, id: str, status: str):
+    def set_file_status(self, id: uuid.UUID, status: str):
         # Находим файл по пути
         with self.session() as session:
             file_to_update = session.query(
@@ -164,11 +154,9 @@ class DB():
                 print(f"Файл '{id}' не найден в базе данных.")
 
     def set_media_path(self, path: str, type: str):
-
         with self.session() as session:
             try:
-                new_path = MediaPath(id=str(uuid.uuid4()),
-                                     path=path, type=type)
+                new_path = MediaPath(path=path, type=type)
                 session.add(new_path)
                 session.commit()
                 print(f"Путь '{path}' успешно добавлен в базу данных.")
@@ -183,18 +171,16 @@ class DB():
                     print(f"Ошибка при добавлении файла: {e}")
                     return {'status': 'error', "message": f"Ошибка при добавлении файла: {e}"}
 
-    def get_media_paths(self):
-        # Получаем первый медиа-путь
+    def get_media_paths(self) -> list:
         with self.session() as session:
             paths = session.query(MediaPath).all()
-
             if paths:
-                return paths  # Возвращаем весь объект MediaPath
+                return paths
             else:
-                print("Нет медиа-путей в базе данных.")
-                return []  # Возвращаем None, если путей нет
+                print("Нет медиатек в базе данных.")
+                return []
 
-    def update_media_path_type(self, path_id: str, new_type: str):
+    def update_media_path_type(self, path_id: uuid.UUID, new_type: str):
         # Получаем медиа-путь по ID
         with self.session() as session:
             media_path = session.query(MediaPath).filter_by(id=path_id).first()
@@ -214,7 +200,7 @@ class DB():
                 print(f"Медиа-путь с ID '{path_id}' не найден.")
                 return {'status': 'error', "message": f"Медиа-путь с ID '{path_id}' не найден."}
 
-    def delete_media_path(self, path_id: str):
+    def delete_media_path(self, path_id: uuid.UUID):
         # Получаем медиа-путь по ID
         with self.session() as session:
             media_path = session.query(

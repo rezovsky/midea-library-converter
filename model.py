@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import ForeignKey, Integer, Column, String
+from sqlalchemy import Boolean, ForeignKey, Integer, Column, String
 from sqlalchemy.orm import declarative_base, relationship
 
 # Создаем базовый класс для всех моделей
@@ -20,8 +20,10 @@ class MediaPath(IdUsage):
     name = Column(String, unique=True, nullable=False)
     type = Column(String, nullable=False)
     convert_resolution = Column(String, nullable=False)
+    auto_scan = Column(Boolean)
+    auto_convert = Column(Boolean)
 
-    video_path = relationship('VideoPath', backref='media')
+    videos = relationship('VideoPath', back_populates='media_path')
 
 
 class VideoPath(IdUsage):
@@ -35,7 +37,7 @@ class VideoPath(IdUsage):
     frame = Column(Integer, nullable=True)
     status = Column(String)
 
-    media_relation = relationship('MediaPath', backref='videos')
+    media_path = relationship('MediaPath', back_populates='videos')
 
 
 class MainSettings(Base):

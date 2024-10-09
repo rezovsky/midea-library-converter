@@ -2,6 +2,7 @@ import re
 import subprocess
 import os
 import time
+from data_processing import DPVideoInfo
 from db import DB, VideoPath
 
 
@@ -20,7 +21,7 @@ class VideoEncoder:
         self.duration_seconds = 0
         self.frame_rate = 0
 
-    def get_video_info(self, video_path):
+    def get_video_info(self, video_path) -> DPVideoInfo:
         cmd = [
             'ffprobe',
             '-hide_banner',
@@ -30,7 +31,6 @@ class VideoEncoder:
         try:
             process  = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-            print(video_path)
             self.total_frames = 0
             self.duration_seconds = 0
             self.frame_rate = 0
@@ -46,27 +46,25 @@ class VideoEncoder:
                 if match and self.duration_seconds == 0:
                     hours, minutes, seconds, milliseconds = match.groups()
                     self.duration_seconds = float(int(hours) * 3600 + int(minutes) * 60 + int(seconds) + int(milliseconds) / 1000)
-                    print(self.duration_seconds)
                 
                 # Поиск частоты кадров
                 match_fps = re.search(r"(\d+(?:\.\d+)?)\s*fps", output)
                 if match_fps and self.frame_rate == 0:
                     self.frame_rate = float(match_fps.group(1))
-                    print(self.frame_rate)
 
                 # вычисляем кол-во кадров
                 if self.duration_seconds and self.frame_rate:
                     self.total_frames = round(self.duration_seconds * self.frame_rate)
-                    print(self.total_frames)
                     break
-            return {'duration': round(self.duration_seconds), 'frames': round(self.total_frames)}
+                
+            return DPVideoInfo(duration=round(self.duration_seconds), frames=round(self.total_frames))
 
         except subprocess.CalledProcessError as e:
             print(f"Ошибка при получении информации о видео: {e}")
-            return None
+            return DPVideoInfo(error=f"Ошибка при получении информации о видео: {e}")
         except ValueError as e:
             print(f"Ошибка при преобразовании данных: {e}")
-            return None
+            return DPVideoInfo(error=f"Ошибка при преобразовании данных: {e}")
 
     def encode_video(self, video_file: 'VideoPath', quality: str):
         video_path = video_file.path
