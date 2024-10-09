@@ -1,36 +1,8 @@
+from model import Base
 import os
 import uuid
-from sqlalchemy import Integer, create_engine, Column, String
-from sqlalchemy.orm import declarative_base, sessionmaker
-
-# Создаем базовый класс для всех моделей
-Base = declarative_base()
-
-# Определяем модель (таблицу)
-class VideoPath(Base):
-    __tablename__ = 'video_path'
-
-    id = Column(String, primary_key=True, unique=True)
-    path = Column(String, unique=True)
-    duration = Column(Integer)
-    frames = Column(Integer)
-    frame = Column(Integer, nullable=True)
-    status = Column(String)
-
-
-class MediaPath(Base):
-    __tablename__ = 'media_path'
-
-    id = Column(String, primary_key=True, unique=True)
-    path = Column(String, unique=True)
-    type = Column(String)
-
-
-class MainSettings(Base):
-    __tablename__ = 'settings'
-
-    name = Column(String, unique=True, primary_key=True)
-    value = Column(String)
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 
 class DB():
@@ -71,24 +43,25 @@ class DB():
         # Добавляем настройки только если их ещё нет в базе
         for setting in default_settings:
             with self.session() as session:
-                existing_setting = session.query(MainSettings).filter_by(name=setting['name']).first()
+                existing_setting = session.query(
+                    MainSettings).filter_by(name=setting['name']).first()
                 if not existing_setting:
-                    new_setting = MainSettings(name=setting['name'], value=setting['value'])
+                    new_setting = MainSettings(
+                        name=setting['name'], value=setting['value'])
                     session.add(new_setting)
                     session.commit()
 
-        default_media_path = [
-            {'path': '/app/media', 'type': 'video'},
-        ]
-        # Добавляем медиа-пути только если их ещё нет в базе
-        for path in default_media_path:
-            with self.session() as session:
-                existing_path = session.query(MediaPath).first()
-                if not existing_path:
-                    new_path = MediaPath(id=str(uuid.uuid4()), path=path['path'], type=path['type'])
-                    session.add(new_path)
-                    session.commit()    
-
+        # default_media_path = [
+        #     {'path': '/app/media', 'type': 'video'},
+        # ]
+        # # Добавляем медиа-пути только если их ещё нет в базе
+        # for path in default_media_path:
+        #     with self.session() as session:
+        #         existing_path = session.query(MediaPath).first()
+        #         if not existing_path:
+        #             new_path = MediaPath(id=str(uuid.uuid4()), path=path['path'], type=path['type'])
+        #             session.add(new_path)
+        #             session.commit()
 
     def add_file(self, path: str, duration: int = 0, frames: int = 0):
         with self.session() as session:
@@ -107,12 +80,13 @@ class DB():
                 session.rollback()
                 # Проверяем, была ли ошибка связана с уникальностью
                 if 'UNIQUE constraint failed' in str(e):
-                    print(f"Файл с путем '{path}' уже существует в базе данных.")
+                    print(f"Файл с путем '{
+                          path}' уже существует в базе данных.")
                     return {'status': 'error', "message": f"Файл с путем '{path}' уже существует в базе данных."}
                 else:
                     print(f"Ошибка при добавлении файла: {e}")
                     return {'status': 'error', "message": f"Ошибка при добавлении файла: {e}"}
-    
+
     def check_file_by_path(self, path: str):
         with self.session() as session:
             media = session.query(VideoPath).filter_by(path=path).first()
@@ -184,7 +158,7 @@ class DB():
 
             if file_to_update:
                 file_to_update.status = status
-                session.commit() 
+                session.commit()
                 print(f"Статус файла '{id}' обновлен на '{status}'.")
             else:
                 print(f"Файл '{id}' не найден в базе данных.")
@@ -193,7 +167,8 @@ class DB():
 
         with self.session() as session:
             try:
-                new_path = MediaPath(id=str(uuid.uuid4()), path=path, type=type)
+                new_path = MediaPath(id=str(uuid.uuid4()),
+                                     path=path, type=type)
                 session.add(new_path)
                 session.commit()
                 print(f"Путь '{path}' успешно добавлен в базу данных.")
@@ -273,7 +248,8 @@ class DB():
                 session.commit()
                 return {'status': 'success', "message": f"Настройка '{setting_name}' успешно обновлена."}
             else:
-                new_setting = MainSettings(name=setting_name, value=setting_value)
+                new_setting = MainSettings(
+                    name=setting_name, value=setting_value)
                 session.add(new_setting)
                 session.commit()
                 return {'status': 'success', "message": f"Настройка '{setting_name}' успешно добавлена."}

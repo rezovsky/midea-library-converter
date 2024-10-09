@@ -19,6 +19,7 @@ export default {
         },
     },
     computed: {
+
         cardStyle() {
             // Цвет карты в зависимости от статуса
             switch (this.file.status) {
@@ -40,6 +41,7 @@ export default {
             // Вычисляем процент прогресса
             return Math.round((this.file.frame / this.file.frames) * 100);
         },
+
         formattedDuration() {
             // Форматируем длительность из секунд в часы:минуты:секунды
             if (this.file.duration === 0) return null;
@@ -64,8 +66,7 @@ export default {
             formatted += `${seconds}с`;
 
             return formatted.trim();
-        },
-    },
+        }    },
 };
 </script>
 
@@ -76,10 +77,12 @@ export default {
     border-radius: 15px;
     margin-bottom: 10px;
 }
+
 .file-content {
     padding: 0px;
     margin: 0px;
 }
+
 .file-content h4 {
     font-size: 1.2rem;
 }

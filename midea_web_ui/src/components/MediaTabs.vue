@@ -59,7 +59,6 @@ export default {
     if (this.media_paths.length > 0) {
       this.activeTab = this.media_paths[0];
     }
-    console.log(this.media_paths);
     this.filterFiles();
   },
   methods: {
